@@ -128,7 +128,7 @@
         show_404($this->functions_datan->get_404_infos());
       }
 
-      $data['active'] = TRUE;
+      $data['active'] = dissolution() === false ? true : false;
       $data['legislature'] = $legislature;
       $data['groupes'] = $this->groupes_model->get_groupes_all($data['active'], $data['legislature']);
       $data['number_groupes_inactive'] = $this->groupes_model->get_number_inactive_groupes();
@@ -290,11 +290,9 @@
       $data = $this->get_data_stats($data);
 
       // ACCORD AVEC GROUPES
-      $data['accord_groupes_actifs'] = $this->groupes_model->get_stats_proximite($data['groupe']['uid']); // PROXIMITÉ TOUS LES GROUPES
       $data['accord_groupes_all'] = $this->groupes_model->get_stats_proximite_all($data['groupe']['uid']);
-
-      if ($data['groupe']['legislature'] == legislature_current()) {
-        $data['accord_groupes_featured'] = $data['accord_groupes_actifs'];
+      if ($data['groupe']['legislature'] == legislature_current() && dissolution() === false) {
+        $data['accord_groupes_featured'] = $this->groupes_model->get_stats_proximite($data['groupe']['uid']);
       } else {
         $data['accord_groupes_featured'] = $data['accord_groupes_all'];
       }
@@ -658,10 +656,9 @@
       $data = $this->get_data_stats($data);
 
       // Get overall proximity stats
-      $data['accord_groupes_actifs'] = $this->groupes_model->get_stats_proximite($data['groupe']['uid']);
       $data['accord_groupes_all'] = $this->groupes_model->get_stats_proximite_all($data['groupe']['uid']);
-      if ($data['groupe']['legislature'] == legislature_current()) {
-        $data['accord_groupes_featured'] = $data['accord_groupes_actifs'];
+      if ($data['groupe']['legislature'] == legislature_current() && dissolution() === false) {
+        $data['accord_groupes_featured'] = $this->groupes_model->get_stats_proximite($data['groupe']['uid']);
       } else {
         $data['accord_groupes_featured'] = $data['accord_groupes_all'];
       }
@@ -679,9 +676,12 @@
       // Get group orga stats history
       $data['orga_history'] = $this->groupes_model->get_orga_stats_history($data['history']);
 
+
+      $data['orga_history']['age_max'] = max(array_column($data['orga_history']['age'], 'value')) + 5;
+
       // Get membership data by group (IF == current_legislature)
       if ($data['groupe']['legislature'] == legislature_current()) {
-        $data['members'] = $this->groupes_model->get_groupes_all(TRUE, $data['groupe']['legislature']);
+        $data['members'] = $this->groupes_model->get_groupes_all($data['active'], $data['groupe']['legislature']);
         foreach ($data['members'] as $key => $value) {
           $data['members'][$key]['value'] = $value['effectif'];
         }
@@ -707,25 +707,27 @@
       $data['members_history'] = $this->groupes_model->get_effectif_history($data['history']);
 
       // Get age data
-      $data['age'] = $this->stats_model->get_groups_age();
-      foreach ($data['age'] as $key => $value) {
-        $data['age'][$key]['value'] = $value['age'];
-      }
-      $data['age_max'] = $data['age'][0]['value'] + 5;
-
-      // Get age ranking
       if ($data['active']) {
-        $x = 1;
+        $data['age'] = $this->stats_model->get_groups_age();
         foreach ($data['age'] as $key => $value) {
-          if ($value['organeRef'] == $data['groupe']['uid']) {
-            $data['ageRanking']['number'] = $x;
-          }
-          $x++;
+          $data['age'][$key]['value'] = $value['age'];
         }
-        if ($data['ageRanking']['number'] == count($data['age'])) {
-          $data['ageRanking']['last'] = TRUE;
-        } else {
-          $data['ageRanking']['last'] = FALSE;
+        $data['age_max'] = $data['age'][0]['value'] + 5;
+
+        // Get age ranking
+        if ($data['active']) {
+          $x = 1;
+          foreach ($data['age'] as $key => $value) {
+            if ($value['organeRef'] == $data['groupe']['uid']) {
+              $data['ageRanking']['number'] = $x;
+            }
+            $x++;
+          }
+          if ($data['ageRanking']['number'] == count($data['age'])) {
+            $data['ageRanking']['last'] = TRUE;
+          } else {
+            $data['ageRanking']['last'] = FALSE;
+          }
         }
       }
 

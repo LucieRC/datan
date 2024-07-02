@@ -9,9 +9,9 @@
         $this->db->where('dptSlug', $departement);
       }
 
-      if ($active === TRUE) {
+      if ($active === TRUE && dissolution() === FALSE) {
         $this->db->where('dateFin IS NULL');
-      } elseif ($active === FALSE) {
+      } else {
         $this->db->where('dateFin IS NOT NULL');
       }
 
@@ -68,7 +68,7 @@
       $this->db->select('COUNT(d.civ) AS n');
       $this->db->select('CASE WHEN d.civ = "M." THEN "male" WHEN civ = "Mme" THEN "female" END AS gender', FALSE);
       $this->db->where('m.legislature', $legislature);
-      if ($legislature == legislature_current()) {
+      if ($legislature == legislature_current() && dissolution() === false) {
         $this->db->where('m.dateFin IS NULL');
       } else {
         $this->db->where('m.datePriseFonction', $datePriseFonction[$legislature]);
@@ -447,19 +447,14 @@
     }
 
     public function get_depute_random(){
-      $sql = 'SELECT A.*, d.civ
-        FROM
-        (
-          SELECT *,
-          CONCAT(da.departementNom, " (", da.departementCode, ")") AS cardCenter
-          FROM deputes_all da
-          WHERE legislature = ? AND dateFin IS NULL
-          ORDER BY RAND()
-          LIMIT 1
-        ) A
-        LEFT JOIN deputes d ON d.mpId = A.mpId
-      ';
-      return $this->db->query($sql, legislature_current())->row_array();
+      if (dissolution() === false) {
+        $this->db->where('da.dateFin IS NULL');
+      }
+      $this->db->where('legislature', legislature_current());
+      $this->db->select('da.*, CONCAT(da.departementNom, " (", da.departementCode, ")") AS cardCenter');
+      $this->db->limit(1);
+      $this->db->order_by('rand()');
+      return $this->db->get('deputes_all da')->row_array();
     }
 
     public function get_depute_vote_plus(){
@@ -474,8 +469,10 @@
           LIMIT 1
         ) A
         LEFT JOIN deputes_last da ON da.mpId = A.mpId
-        WHERE da.dateFin IS NULL
       ';
+      if (dissolution() === false) {
+        $sql .= " WHERE da.dateFin IS NULL";
+      }
       return $this->db->query($sql)->row_array();
     }
 
@@ -509,8 +506,10 @@
           LIMIT 1
         ) A
         LEFT JOIN deputes_last da ON da.mpId = A.mpId
-        WHERE da.dateFin IS NULL
       ';
+      if (dissolution() === false) {
+        $sql .= " WHERE da.dateFin IS NULL";
+      }
       return $this->db->query($sql)->row_array();
     }
 
@@ -527,14 +526,15 @@
             FROM class_loyaute_six
             WHERE votesN > 50
           ) AND votesN > 50
-          ) A
+        ) A
         LEFT JOIN deputes_last da ON da.mpId = A.mpId
-        WHERE da.dateFin IS NULL
-        ORDER BY RAND()
-        LIMIT 1
-      ';
-      return $this->db->query($sql)->row_array();
-    }
+    ';
+    if (dissolution() === false) {
+      $sql .= " WHERE da.dateFin IS NULL";
+    } 
+    $sql .= " ORDER BY RAND() LIMIT 1";
+    return $this->db->query($sql)->row_array();
+  }
 
     public function get_depute_loyal_moins(){
       $sql = 'SELECT A.mpId, A.votesN, da.civ, da.nameFirst, da.nameLast, da.nameUrl, da.legislature, da.dptSlug, da.couleurAssociee, da.img, da.libelle, da.libelleAbrev, da.groupeId AS organeRef, da.departementNom AS electionDepartement, da.departementCode AS electionDepartementNumero,
@@ -551,10 +551,11 @@
           ) AND votesN > 50
           ) A
         LEFT JOIN deputes_last da ON da.mpId = A.mpId
-        WHERE da.dateFin IS NULL
-        ORDER BY RAND()
-        LIMIT 1
       ';
+      if (dissolution() === false) {
+        $sql .= " WHERE da.dateFin IS NULL";
+      }
+      $sql .= "ORDER BY RAND() LIMIT 1";
       return $this->db->query($sql)->row_array();
     }
 
@@ -616,7 +617,7 @@
     public function get_stats_participation_solennels_all($legislature){
       $this->db->select('round(avg(score) * 100) AS score');
       $this->db->where('legislature', $legislature);
-      if ($legislature == legislature_current()) {
+      if ($legislature == legislature_current() && dissolution() === false) {
         $this->db->where('active', 1);
       }
       $result = $this->db->get('class_participation_solennels')->row_array();
@@ -628,7 +629,7 @@
       $this->db->join('deputes_all da', 'da.mpId = cps.mpId AND da.legislature = cps.legislature');
       $this->db->where('da.groupeId', $group);
       $this->db->where('cps.legislature', $legislature);
-      if ($legislature == legislature_current()) {
+      if ($legislature == legislature_current() && dissolution() === false) {
         $this->db->where('cps.active', 1);
       }
       $result = $this->db->get('class_participation_solennels cps')->row_array();
@@ -679,7 +680,7 @@
       $this->db->select('ROUND(AVG(c.score*100)) AS score');
       $this->db->where('c.legislature', $legislature);
       $this->db->join('deputes_all da', 'da.mpId = c.mpId AND da.legislature = c.legislature', 'left');
-      if ($legislature == legislature_current()) {
+      if ($legislature == legislature_current() && dissolution() === false) {
         $this->db->where('da.dateFin IS NULL');
       }
       $result = $this->db->get('class_loyaute c')->row_array();
@@ -691,7 +692,7 @@
       $this->db->where('c.legislature', $legislature);
       $this->db->where('da.groupeId', $group);
       $this->db->join('deputes_all da', 'da.mpId = c.mpId AND da.legislature = c.legislature', 'left');
-      if ($legislature == legislature_current()) {
+      if ($legislature == legislature_current() && dissolution() === false) {
         $this->db->where('da.dateFin IS NULL');
       }
       $result = $this->db->get('class_loyaute c')->row_array();
@@ -722,7 +723,7 @@
       $this->db->where('c.legislature', $legislature);
       $this->db->where_not_in('da.groupeId', $majority_groups);
       $this->db->join('deputes_all da', 'da.mpId = c.mpId AND da.legislature = c.legislature', 'left');
-      if ($legislature == legislature_current()) {
+      if ($legislature == legislature_current() && dissolution() === false) {
         $this->db->where('da.dateFin IS NULL');
       }
       $result = $this->db->get('class_majorite c')->row_array();
@@ -734,7 +735,7 @@
       $this->db->where('c.legislature', $legislature);
       $this->db->where('da.groupeId', $group);
       $this->db->join('deputes_all da', 'da.mpId = c.mpId AND da.legislature = c.legislature', 'left');
-      if ($legislature == legislature_current()) {
+      if ($legislature == legislature_current() && dissolution() === false) {
         $this->db->where('da.dateFin IS NULL');
       }
       $result = $this->db->get('class_majorite c')->row_array();

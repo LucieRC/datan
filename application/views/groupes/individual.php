@@ -8,6 +8,7 @@
       <?php $this->load->view('groupes/partials/card_individual.php', array('tag' => 'h1')) ?>
     </div>
     <div class="col-md-10 col-lg-8 offset-md-1 offset-lg-0 pl-lg-5">
+      <?php $this->view('groupes/partials/dissolutionFeature.php') ?>
       <!-- BIO & ELECTION -->
       <div class="bloc-bio mt-5">
         <h2 class="mb-4 title-center">Le groupe <?= $groupe['libelleAbrev'] ?> en quelques mots</h2>
@@ -331,7 +332,7 @@
                     </h3>
                   </div>
                 </div>
-                <?php if ($no_participation): ?>
+                <?php if ($no_majorite): ?>
                   <div class="row">
                     <div class="col-12 mt-2">
                       <p>Du fait d'un nombre insuffisant de votes de la part du groupe <?= name_group($title) ?>, aucune statistique n'a pu être produite.</p>

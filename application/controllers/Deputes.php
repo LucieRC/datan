@@ -55,8 +55,8 @@
             $data['no_majorite'] = FALSE;
             // GET ALL DATA FOR PROXIMITY WITH MAJORITY
             $data['majorite']['all'] = $this->deputes_model->get_stats_majorite_all($legislature); // DOUBLE CHECK --> ONLY THOSE NOT FROM THE GROUP OF THE MAJORITY
-            $data['edito_majorite']['all'] = $this->depute_edito->majorite($data['majorite']['score'], $data['majorite']['all']); // edited for ALL
             $data['majorite']['group'] = $this->deputes_model->get_stats_majorite_group($legislature, $groupe_id);
+            $data['edito_majorite']['all'] = $this->depute_edito->majorite($data['majorite']['score'], $data['majorite']['all']); // edited for ALL
             $data['edito_majorite']['group'] = $this->depute_edito->majorite($data['majorite']['score'], $data['majorite']['group']); //edited for GROUP
           } else {
             $data['no_majorite'] = TRUE;
@@ -64,7 +64,7 @@
         }
 
         // PROXIMITY WITH ALL GROUPS
-        if ($legislature == legislature_current()) /*LEGISLATURE 16*/ {
+        if ($legislature == legislature_current() && dissolution() === false) /*LEGISLATURE 16*/ {
           $data['accord_groupes'] = $this->deputes_model->get_accord_groupes_actifs($mpId, legislature_current());
           $data['accord_groupes_all'] = $this->deputes_model->get_accord_groupes_all($mpId, legislature_current());
           // Positionnement politique
@@ -113,7 +113,7 @@
         show_404($this->functions_datan->get_404_infos());
       }
 
-      if ($legislature == legislature_current()) {
+      if ($legislature == legislature_current() && dissolution() === false) {
         $data['active'] = TRUE;
         //$data['president'] = $this->deputes_model->get_president_an(); THE OPEN DATA FROM THE AN IS NOT UPDATED!
         $data['president'] = $this->deputes_model->get_depute_by_mpId('PA721908');
@@ -340,7 +340,7 @@
       $data['groupMajority'] = $this->groupes_model->get_majority_group();
 
       // Get pct famSocPro
-      $data['famSocPro'] = $this->jobs_model->get_stats_individual($data['depute']['famSocPro'], $legislature);
+      $data['famSocPro'] = null;// $this->jobs_model->get_stats_individual($data['depute']['famSocPro'], $legislature);
 
       // Get commission parlementaire
       if ($data['active']) {
@@ -412,7 +412,7 @@
       }
 
       // Get featured vote (motion de centure)
-      $data['voteFeature'] = $this->votes_model->get_individual_vote_depute_participation($mpId, 16, -1); // Congrès IVG
+      //$data['voteFeature'] = $this->votes_model->get_individual_vote_depute_participation($mpId, 16, -1); // Congrès IVG
 
       // Get last explication
       $data['explication'] = $this->deputes_model->get_last_explication($mpId, $legislature);
